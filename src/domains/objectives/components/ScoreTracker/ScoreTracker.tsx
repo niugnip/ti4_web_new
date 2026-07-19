@@ -1,5 +1,5 @@
 import { Box, Text } from "@mantine/core";
-import { PlayerData } from "@/entities/data/types";
+import { PlayerData, WebScoreBreakdown } from "@/entities/data/types";
 import { CircularFactionIcon } from "@/shared/ui/CircularFactionIcon";
 import { useOrderedFactions } from "@/hooks/useOrderedFactions";
 import styles from "./ScoreTracker.module.css";
@@ -7,34 +7,51 @@ import styles from "./ScoreTracker.module.css";
 type Props = {
   playerData: PlayerData[];
   vpsToWin: number;
+  /** Includes entries for players hidden from playerData (FoW) - used to still place a
+   * greyed-out token for them at their (public) score-track position. */
+  scoreBreakdowns?: Record<string, WebScoreBreakdown>;
 };
 
-function ScoreTracker({ playerData, vpsToWin }: Props) {
+type TrackEntry = { faction: string; player?: PlayerData };
+
+function ScoreTracker({ playerData, vpsToWin, scoreBreakdowns }: Props) {
   // Create array of score positions 0 to vpsToWin
   const scorePositions = Array.from({ length: vpsToWin + 1 }, (_, i) => i);
 
   // Get consistently ordered factions
   const orderedFactions = useOrderedFactions(playerData);
 
+  // Roster of every faction with a score, including ones hidden from playerData by FoW (visible
+  // here only via scoreBreakdowns, with no identifying data beyond their public total VP).
+  const playerByFaction = new Map(playerData.map((p) => [p.faction, p]));
+  const rosterFactions = new Set([
+    ...playerData.map((p) => p.faction),
+    ...Object.keys(scoreBreakdowns ?? {}),
+  ]);
+
   // Group factions by their score, maintaining consistent ordering
-  const factionsByScore = playerData.reduce(
-    (acc, player) => {
-      const score = player.totalVps;
+  const factionsByScore = Array.from(rosterFactions).reduce(
+    (acc, faction) => {
+      const player = playerByFaction.get(faction);
+      const score = player?.totalVps ?? scoreBreakdowns?.[faction]?.totalVps;
+      if (score === undefined) return acc;
       if (!acc[score]) {
         acc[score] = [];
       }
-      acc[score].push(player);
+      acc[score].push({ faction, player });
       return acc;
     },
-    {} as Record<number, PlayerData[]>
+    {} as Record<number, TrackEntry[]>
   );
 
-  // Sort players within each score group by faction order
+  // Sort factions within each score group by faction order (unidentified ones last)
   Object.keys(factionsByScore).forEach((scoreKey) => {
     const score = parseInt(scoreKey);
     factionsByScore[score].sort((a, b) => {
-      const aIndex = orderedFactions.indexOf(a.faction);
-      const bIndex = orderedFactions.indexOf(b.faction);
+      const rawA = orderedFactions.indexOf(a.faction);
+      const rawB = orderedFactions.indexOf(b.faction);
+      const aIndex = rawA === -1 ? orderedFactions.length : rawA;
+      const bIndex = rawB === -1 ? orderedFactions.length : rawB;
       return aIndex - bIndex;
     });
   });
@@ -62,11 +79,19 @@ function ScoreTracker({ playerData, vpsToWin }: Props) {
             {/* Faction control tokens */}
             {playersAtScore.length > 0 && (
               <Box className={styles.factionTokens}>
-                {playersAtScore.map((player) => (
-                  <Box key={player.faction} className={styles.tokenContainer}>
-                    <CircularFactionIcon faction={player.faction} factionImageOverride={player.factionImage} factionImageTypeOverride={player.factionImageType} size={32} />
-                  </Box>
-                ))}
+                {playersAtScore.map(({ faction, player }) =>
+                  player ? (
+                    <Box key={faction} className={styles.tokenContainer}>
+                      <CircularFactionIcon faction={player.faction} factionImageOverride={player.factionImage} factionImageTypeOverride={player.factionImageType} size={32} />
+                    </Box>
+                  ) : (
+                    <Box
+                      key={faction}
+                      className={`${styles.tokenContainer} ${styles.hiddenToken}`}
+                      title="Unidentified player"
+                    />
+                  )
+                )}
               </Box>
             )}
 

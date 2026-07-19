@@ -11,6 +11,8 @@ import { ObjectiveDetailsCard } from "./ObjectiveDetailsCard";
 import { SmoothPopover } from "@/shared/ui/SmoothPopover";
 import { isMobileDevice } from "@/utils/isTouchDevice";
 import { lowPriorityImageProps } from "@/shared/ui/imageLoading";
+import { useUser } from "@/hooks/useUser";
+import { computeScoreTier, getOwnFaction } from "@/utils/objectiveScoreTiers";
 
 type Props = {
   playerData: PlayerData[];
@@ -32,23 +34,23 @@ function ExpandedObjectiveCard({
   onOpenChange,
 }: Props) {
   const isMobile = isMobileDevice();
+  const { user } = useUser();
   const objectiveData = publicObjectives.find(
     (obj) => obj.alias === objective.key,
   );
   const shouldShowMobileTooltip =
     isMobile && objective.revealed && Boolean(objectiveData?.text);
 
-  // Create faction progress data with alphabetical sorting for consistency
-  const factionProgressData = playerData
-    .map((player) => ({
-      player,
-      progress: objective.factionProgress[player.faction] || 0,
-      isScored: objective.scoredFactions.includes(player.faction),
-      isAtThreshold:
-        (objective.factionProgress[player.faction] || 0) >=
-        objective.progressThreshold,
-    }))
-    .sort((a, b) => a.player.faction.localeCompare(b.player.faction));
+  const ownFaction = getOwnFaction(playerData, user?.discord_id);
+  const tier = computeScoreTier(
+    objective.key,
+    objective.scoredFactions,
+    playerData,
+    ownFaction,
+  );
+  const ownProgress = ownFaction
+    ? (objective.factionProgress[ownFaction] ?? null)
+    : null;
 
   const renderProgressDisplay = () => {
     if (!objective.revealed) return null;
@@ -56,20 +58,38 @@ function ExpandedObjectiveCard({
     if (objective.progressThreshold > 0) {
       return (
         <ProgressObjectiveDisplay
-          factionProgressData={factionProgressData}
+          tier={tier}
           progressThreshold={objective.progressThreshold}
+          ownProgress={ownProgress}
+          factionProgress={objective.factionProgress}
         />
       );
     }
 
     if (custom) {
-      return objective.scoredFactions.map((faction, index) => (
-        <CircularFactionIcon
-          key={`${faction}-${index}`}
-          faction={faction}
-          size={24}
-        />
-      ));
+      return (
+        <>
+          {tier.ownFaction && tier.ownScored && (
+            <CircularFactionIcon faction={tier.ownFaction} size={24} />
+          )}
+          {tier.identifiedScorers.map((player) => (
+            <CircularFactionIcon
+              key={player.faction}
+              faction={player.faction}
+              factionImageOverride={player.factionImage}
+              factionImageTypeOverride={player.factionImageType}
+              size={24}
+            />
+          ))}
+          {tier.anonymousScorers.map((faction) => (
+            <div
+              key={faction}
+              className={styles.anonymousToken}
+              title="Unidentified player"
+            />
+          ))}
+        </>
+      );
     }
 
     return null;

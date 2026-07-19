@@ -1,11 +1,13 @@
 import { Stack, Box, Text, Group, Divider, Image } from "@mantine/core";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconQuestionMark } from "@tabler/icons-react";
 import { publicObjectives } from "@/entities/data/publicObjectives";
 import { PlayerData } from "@/entities/data/types";
 import { CircularFactionIcon } from "@/shared/ui/CircularFactionIcon";
 import { DetailsCard } from "@/shared/ui/DetailsCard";
 import classes from "./ObjectiveDetailsCard.module.css";
 import { getPlayerFactionDisplayName } from "@/utils/playerUtils";
+import { useUser } from "@/hooks/useUser";
+import { computeScoreTier, getOwnFaction } from "@/utils/objectiveScoreTiers";
 
 type Props = {
   objectiveKey: string;
@@ -31,26 +33,19 @@ export function ObjectiveDetailsCard({
   const objectiveData = publicObjectives.find(
     (obj) => obj.alias === objectiveKey
   );
+  const { user } = useUser();
 
   if (!objectiveData) return null;
 
-  // Create a set for fast lookup of scored factions
-  const scoredFactionsSet = new Set(scoredFactions);
+  const ownFaction = getOwnFaction(playerData, user?.discord_id);
+  const tier = computeScoreTier(objectiveKey, scoredFactions, playerData, ownFaction);
+  const ownProgress = ownFaction ? (factionProgress[ownFaction] ?? 0) : 0;
 
-  // Create faction progress data with sorting
-  const factionProgressData = playerData.map((player) => ({
-    player,
-    progress: factionProgress[player.faction] || 0,
-    isScored: scoredFactionsSet.has(player.faction),
-  }));
-
-  // Sort by: scored first, then by highest progress
-  factionProgressData.sort((a, b) => {
-    if (a.isScored && !b.isScored) return -1;
-    if (!a.isScored && b.isScored) return 1;
-    if (a.isScored && b.isScored) return 0; // Keep same order for scored
-    return b.progress - a.progress; // Higher progress first for unscored
-  });
+  // Own row first, then identified others (scored before unscored), then anonymous scorers last.
+  const identifiedRows = [
+    ...tier.identifiedScorers.map((player) => ({ player, isScored: true })),
+    ...tier.identifiedUnscored.map((player) => ({ player, isScored: false })),
+  ].sort((a, b) => (a.isScored === b.isScored ? 0 : a.isScored ? -1 : 1));
 
   const mapCardColor = (
     c: Props["color"]
@@ -71,7 +66,7 @@ export function ObjectiveDetailsCard({
   const renderRedTape = () => {
       return (
           <Image src={"/redTape.png"} className={"redTape"} w={48} h={48} />
-      ) 
+      )
     }
 
   return (
@@ -97,7 +92,41 @@ export function ObjectiveDetailsCard({
               title="Faction Progress"
               content={
                 <Stack gap={6}>
-                  {factionProgressData.map(({ player, progress, isScored }) => (
+                  {tier.ownFaction && (
+                    <Group
+                      key={tier.ownFaction}
+                      gap="sm"
+                      align="center"
+                      wrap="nowrap"
+                    >
+                      <Box w={24} className={classes.factionIconBox}>
+                        <CircularFactionIcon faction={tier.ownFaction} size={24} />
+                      </Box>
+                      <Text
+                        size="xs"
+                        c="gray.4"
+                        fw={600}
+                        tt="uppercase"
+                        className={classes.factionName}
+                      >
+                        You
+                      </Text>
+                      <Box w={40} className={classes.progressValueBox} ml="auto">
+                        {tier.ownScored ? (
+                          <IconCheck
+                            size={18}
+                            color="var(--mantine-color-green-5)"
+                          />
+                        ) : (
+                          <Text size="sm" c="gray.4" fw={500}>
+                            {ownProgress}/{progressThreshold}
+                          </Text>
+                        )}
+                      </Box>
+                    </Group>
+                  )}
+
+                  {identifiedRows.map(({ player, isScored }) => (
                     <Group
                       key={player.faction}
                       gap="sm"
@@ -127,11 +156,41 @@ export function ObjectiveDetailsCard({
                             size={18}
                             color="var(--mantine-color-green-5)"
                           />
-                        ) : (
+                        ) : factionProgress[player.faction] !== undefined ? (
                           <Text size="sm" c="gray.4" fw={500}>
-                            {progress}/{progressThreshold}
+                            {factionProgress[player.faction]}/{progressThreshold}
                           </Text>
+                        ) : (
+                          <IconQuestionMark
+                            size={16}
+                            color="var(--mantine-color-gray-5)"
+                          />
                         )}
+                      </Box>
+                    </Group>
+                  ))}
+
+                  {tier.anonymousScorers.map((faction) => (
+                    <Group
+                      key={faction}
+                      gap="sm"
+                      align="center"
+                      wrap="nowrap"
+                    >
+                      <Box w={24} className={classes.factionIconBox}>
+                        <div className={classes.anonymousToken} />
+                      </Box>
+                      <Text
+                        size="sm"
+                        c="gray.5"
+                        fw={500}
+                        fs="italic"
+                        className={classes.playerName}
+                      >
+                        Unidentified player
+                      </Text>
+                      <Box w={40} className={classes.progressValueBox} ml="auto">
+                        <IconCheck size={18} color="var(--mantine-color-gray-5)" />
                       </Box>
                     </Group>
                   ))}

@@ -9,8 +9,10 @@ const devConfig = {
     discordRedirectUri: "http://localhost:5173/login",
     gameDataUrl: "/bot/api/public/game",
     botApiUrl: "/bot/api",
-    websocketUrl: "wss://bot.asyncti4.com/ws",
-    // websocketUrl: "ws://localhost:8081/ws",
+    // Set VITE_WEBSOCKET_URL in .env.local to point at a local async bot
+    // (e.g. ws://localhost:8081/ws) for local testing.
+    websocketUrl:
+      import.meta.env.VITE_WEBSOCKET_URL || "wss://bot.asyncti4.com/ws",
   },
 };
 
