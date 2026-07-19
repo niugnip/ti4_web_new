@@ -101,11 +101,20 @@ export function FloatingMapToolbar({
   const panelId = useId();
   const gameData = useGameData();
   const viewAsPlayerId = useFowViewStore((state) => state.viewAsPlayerId);
+  const setViewAsPlayer = useFowViewStore((state) => state.setViewAsPlayer);
   const showFowButton = Boolean(gameData?.isFowMode && gameData?.viewerIsGm);
 
   const togglePanel = (panel: FloatingPanel) => {
     setOpenPanel((current) => (current === panel ? null : panel));
   };
+
+  // The FoW GM-preview panel/selection is per-game - close it and drop any stale "view as"
+  // choice when switching games, rather than carrying it (invisibly, for non-FoW games) into
+  // wherever the player navigates next.
+  useEffect(() => {
+    setOpenPanel(null);
+    setViewAsPlayer(null);
+  }, [gameData?.gameName, setViewAsPlayer]);
 
   useEffect(() => {
     if (!openPanel) return;
