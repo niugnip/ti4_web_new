@@ -30,6 +30,7 @@ import { isMobileDevice } from "./utils/isTouchDevice";
 import DashboardPage from "./domains/dashboard/DashboardPage";
 import DashboardSettingsPage from "./domains/dashboard/DashboardSettingsPage";
 import EmbeddedMapPage from "./EmbeddedMapPage";
+import DynamicHexGridDemo from "./domains/dynamicHexDemo/DynamicHexGridDemo";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
   {
     path: "/system/:systemId",
     element: <SystemTilePage />,
+  },
+  {
+    path: "/dynamic-hex-demo",
+    element: <DynamicHexGridDemo />,
   },
 ]);
 

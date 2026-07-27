@@ -1,0 +1,201 @@
+.page {
+  min-height: 100vh;
+  background: radial-gradient(
+      ellipse at 50% 0%,
+      var(--mantine-color-dark-6) 0%,
+      var(--mantine-color-dark-8) 60%
+    ),
+    var(--mantine-color-dark-9);
+  color: var(--mantine-color-gray-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-md);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.subtitle {
+  color: var(--mantine-color-gray-5);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.toolbarRow {
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.legend {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-gray-5);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fieldInner {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.hexVisual {
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+  animation: float 6s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  cursor: pointer;
+}
+
+.hexVisual:active {
+  transition-duration: 0.15s;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+
+.hexShape {
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: linear-gradient(
+    160deg,
+    var(--mantine-color-dark-5) 0%,
+    var(--mantine-color-dark-7) 100%
+  );
+  border: 1px solid var(--mantine-color-dark-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slot:hover .hexShape {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow:
+    inset 0 0 12px rgba(0, 0, 0, 0.35),
+    0 0 14px rgba(var(--mantine-color-blue-5-rgb, 34, 139, 230), 0.45);
+}
+
+.hexContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 62%;
+  user-select: none;
+}
+
+.hexIndex {
+  font-size: 9px;
+  color: var(--mantine-color-gray-6);
+  letter-spacing: 0.5px;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.statPlanets {
+  color: var(--mantine-color-green-4);
+}
+
+.statShips {
+  color: var(--mantine-color-blue-4);
+}
+
+.statTokens {
+  color: var(--mantine-color-yellow-5);
+}
+
+.emptyHint {
+  font-size: 9px;
+  color: var(--mantine-color-dark-2);
+}
+
+.toolbar {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 6px);
+  display: flex;
+  gap: 3px;
+  background: var(--mantine-color-dark-7);
+  border: 1px solid var(--mantine-color-dark-4);
+  border-radius: var(--mantine-radius-md);
+  padding: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 500;
+  box-shadow: var(--mantine-shadow-md);
+}
+
+.slot:hover .toolbar,
+.slot:focus-within .toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.toolbarBtn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--mantine-color-gray-3);
+  cursor: pointer;
+}
+
+.toolbarBtn:hover {
+  background: var(--mantine-color-dark-5);
+}
